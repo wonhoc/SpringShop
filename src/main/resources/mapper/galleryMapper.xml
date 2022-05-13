@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.shop.gallery.GalleryMapper">
+
+	<sql id="search">
+		<where>
+			<choose>
+				<when test ="searchtype == 'ALL'">
+					(gi_title || gi_writer) like CONCAT('%',#{keyword},'%')
+				</when>
+				<otherwise>
+					${searchtype} like CONCAT('%',#{keyword},'%')
+				</otherwise>
+			</choose>
+		</where>
+	</sql>
+	
+	<select id="selectGalleryList" resultType="com.spring.shop.gallery.GalleryDTO" parameterType="map">
+		SELECT
+			gi_no,
+   			gi_title,
+			gi_content,
+   			gi_writer,
+			TO_CHAR(TO_TIMESTAMP(gi_insertdt, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') "gi_insertdt",
+			board_id,
+			file_name,
+			saved_file_name,
+			file_size
+		FROM gallery_info as g left outer join board_attach as f 
+		on g.gi_no = f.board_id 
+		and f.file_num = (
+			select MAX(ba.file_num)
+			from board_attach ba
+			where ba.board_id = g.gi_no 
+			limit 1
+		)
+		<include refid="search" />
+		ORDER BY gi_insertdt DESC
+		LIMIT #{limit} - #{offset} OFFSET #{offset}
+	</select>
+	
+	<select id="selectGalleryTotalPage" resultType="float" parameterType="map">
+		SELECT count(*)
+		FROM gallery_info
+		<include refid="search" />
+	</select>
+	
+	<select id="selectGallery" parameterType="int" resultType="GalleryDTO">
+		SELECT
+			gi_no,
+			gi_title,
+			gi_content,
+			gi_writer,
+			gi_insertdt
+		FROM gallery_info
+		WHERE gi_no = #{gi_no}
+	</select>
+	
+	<select id="selectgGalleryFile" parameterType="int" resultType="FileDTO">
+		SELECT
+			board_type,
+			board_id,
+			file_num,
+			file_name,
+			saved_file_name,
+			file_size
+		FROM board_attach
+		WHERE board_id = #{gi_no}
+	</select>
+	
+	<insert id="insertGallery" parameterType="GalleryDTO" useGeneratedKeys="true" keyProperty="gi_no">
+		INSERT into gallery_info(
+			gi_no,
+			gi_title,
+			gi_content,
+			gi_writer
+   			)
+		VALUES(NEXTVAL('seq_gi_no'), #{gi_title}, #{gi_content},#{gi_writer})
+	</insert>
+
+	<insert id="insertGalleryFile" parameterType="FileDTO">
+		insert into board_attach(
+			board_type,
+			board_id,
+			file_num,
+			file_name,
+			saved_file_name,
+			file_size
+		)values(
+			'Gallery',
+			#{board_id},
+			nextval('seq_file_num'),
+			#{file_name},
+			#{saved_file_name},
+			#{file_size}
+		)
+	</insert>
+
+	<delete id="deleteGallery" parameterType="int">
+		DELETE FROM gallery_info
+		WHERE gi_no = #{gi_no}
+	</delete>
+	
+	<delete id="deleteFileGallery" parameterType="int">
+		DELETE FROM board_attach
+		WHERE file_num = #{file_num} and board_type = 'Gallery'
+	</delete>
+	
+	<update id="updateGallery" parameterType="GalleryDTO">
+		UPDATE gallery_info 
+		SET
+			gi_title = #{gi_title},
+			gi_content = #{gi_content} 
+		WHERE gi_no = #{gi_no}
+	</update>
+	
+	<select id="selectCommentList" parameterType="map" resultType="com.spring.shop.comment.CommentDTO">
+		SELECT 
+			ci_no,
+			board_id,
+			ci_content,
+			ci_writer,
+			TO_CHAR(TO_TIMESTAMP(ci_insertdt, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') "ci_insertdt"
+		FROM comment_info
+		WHERE board_id = #{board_id} and board_type = 'Gallery'
+		ORDER BY ci_insertdt DESC
+		LIMIT #{limit} - #{offset} OFFSET #{offset}
+	</select>
+	
+	<select id="selectGalleryCommTotalPage" resultType="float" parameterType="int">
+		SELECT count(*) 
+		FROM comment_info
+		WHERE board_id = #{board_id} and board_type = 'Gallery'
+	</select>
+	
+	<insert id="insertCommnet" parameterType="CommentDTO">
+		INSERT INTO comment_info  (
+			ci_no,
+			board_id,
+			board_type,
+			ci_content,
+			ci_writer
+		)values(
+			nextval('seq_ci_no'),
+			#{board_id},
+			'Gallery',
+			#{ci_content},
+			#{ci_writer}
+		)
+	</insert>
+	
+	<delete id="deleteComment" parameterType="int">
+		DELETE FROM comment_info
+		WHERE ci_no = #{ci_no}
+	</delete>
+	
+	<update id="updateComment" parameterType="CommentDTO">
+		UPDATE comment_info 
+		SET ci_content = #{ci_content}
+		WHERE ci_no = #{ci_no}
+	</update>
+</mapper>

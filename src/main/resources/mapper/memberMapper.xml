@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.shop.member.MemberMapper">
+	
+	<resultMap type="MemberDTO" id="memberResult">
+		<result property="mi_id" javaType="string" column="mi_id" jdbcType="VARCHAR"/>
+		<result property="mi_pw" javaType="string" column="mi_pw" jdbcType="VARCHAR"/>
+		<result property="mi_email" javaType="string" column="mi_email" jdbcType="VARCHAR"/>
+		<result property="mi_mobile" javaType="string" column="mi_mobile" jdbcType="VARCHAR"/>
+		<result property="mi_tell" javaType="string" column="mi_tell" jdbcType="VARCHAR"/>
+		<result property="mi_addr" javaType="string" column="mi_addr" jdbcType="VARCHAR"/>
+		<result property="mi_insertdt" javaType="string" column="mi_insertdt" jdbcType="VARCHAR"/>
+	</resultMap>
+	
+	<!-- 회원가입 -->
+	<insert id="insertMember" parameterType="MemberDTO">
+		INSERT INTO member_info(mi_id, mi_pw, mi_email, mi_mobile, <if test="mi_tell != ''">mi_tell,</if>mi_addr)
+		VALUES (#{mi_id}, #{mi_pw}, #{mi_email}, #{mi_mobile}, <if test="mi_tell != ''">#{mi_tell},</if> #{mi_addr})
+	</insert>
+	
+	<select id="idCheck" parameterType="String" resultType="String">
+		SELECT mi_id
+		FROM member_info
+		WHERE mi_id = #{mi_id};
+	</select>
+	
+	<!-- 세션저장 -->
+	<select id="selectMember" parameterType="MemberDTO" resultMap="memberResult">
+		SELECT mi_id, 
+			mi_email, 
+			mi_mobile, 
+			mi_tell, 
+			mi_addr, 
+			TO_CHAR(TO_TIMESTAMP(mi_insertdt, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') "mi_insertdt" 
+		FROM member_info
+		WHERE mi_id = #{mi_id} and mi_pw = #{mi_pw};
+	</select>
+	
+	<!-- 비밀번호 확인 -->
+	<select id="selectPw" parameterType="String" resultMap="memberResult">
+		SELECT mi_pw
+		FROM member_info
+		WHERE mi_id = #{mi_id};
+	</select>
+	
+	<!-- 회원정보 수정-->
+	<update id="updateMember" parameterType="MemberDTO" >
+		UPDATE member_info 
+		SET mi_pw = #{mi_pw}, mi_addr = #{mi_addr}, mi_email = #{mi_email}, mi_mobile = #{mi_mobile}, mi_tell = #{mi_tell}
+		WHERE mi_id = #{mi_id};
+	</update>
+	
+	<!-- 회원 탈퇴 -->
+	<delete id="deleteMember" parameterType="String">
+		DELETE FROM member_info
+		WHERE mi_id = #{mi_id};
+	</delete>
+	
+</mapper>
